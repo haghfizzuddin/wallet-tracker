@@ -72,6 +72,9 @@ General information about setting up Wallet Tracker CLI locally
 
 ```bash
 go install github.com/aydinnyunus/wallet-tracker/cmd/wallet-tracker@latest
+git clone https://github.com/aydinnyunus/wallet-tracker
+cd wallet-tracker
+wallet-tracker neodash start
 ```
 
 <!-- USAGE EXAMPLES -->
