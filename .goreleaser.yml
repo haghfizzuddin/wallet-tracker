@@ -12,3 +12,4 @@ builds:
     id: "wallet-tracker"
     dir: .
     main: ./cmd/wallet-tracker
+    binary: wallet-tracker
