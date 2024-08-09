@@ -71,7 +71,7 @@ General information about setting up Wallet Tracker CLI locally
 ## Installation
 
 ```bash
-go get github.com/aydinnyunus/wallet-tracker
+go install github.com/aydinnyunus/wallet-tracker/cmd/wallet-tracker@latest
 ```
 
 <!-- USAGE EXAMPLES -->
