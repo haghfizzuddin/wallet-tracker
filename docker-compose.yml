@@ -1,43 +1,77 @@
-version: '3.7'
+version: '3.8'
+
 services:
   neo4j:
-    image: neo4j:4.4.2
-    restart: always
+    image: neo4j:5.13.0
+    restart: unless-stopped
     hostname: neo4j
-    container_name: neo4j
+    container_name: wallet-tracker-neo4j
     ports:
-      - 7474:7474
-      - 7687:7687
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
     volumes:
-      - ./neo4j/data:/data
+      - ./data/neo4j:/data
       - ./conf:/var/lib/neo4j/conf
     env_file:
       - .env
     environment:
-      - NEO4J_USERNAME=${NEO4J_USERNAME}
-      - NEO4J_PASSWORD=${NEO4J_PASS}
       - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASS}
       - NEO4JLABS_PLUGINS=["apoc", "graph-data-science"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.,gds.
-      - NEO4J_dbms_memory_heap_initial__size=4G
+      - NEO4J_dbms_memory_heap_initial__size=2G
       - NEO4J_dbms_memory_heap_max__size=4G
       - NEO4J_dbms_memory_pagecache_size=2G
-  neodash:
-    build:
-      context: https://github.com/nielsdejong/neodash.git#master
-      args:
-        - standalone=true
-        - standaloneProtocol=neo4j
-        - standaloneHost=localhost
-        - standalonePort=7687
-        - standaloneDatabase=neo4j
-        - standaloneDashboardName=Bitcoin
-        - standaloneDashboardDatabase=neo4j
-    restart: always
-    hostname: neodash
-    container_name: neodash
-    network_mode: bridge
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--method=HEAD", "http://localhost:7474"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    hostname: redis
+    container_name: wallet-tracker-redis
     ports:
-      - 80:5005
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  neodash:
+    image: nielsdejong/neodash:latest
+    restart: unless-stopped
+    hostname: neodash
+    container_name: wallet-tracker-neodash
+    ports:
+      - "5005:5005"
+    environment:
+      - standalone=true
+      - standaloneProtocol=neo4j
+      - standaloneHost=neo4j
+      - standalonePort=7687
+      - standaloneDatabase=neo4j
+      - standaloneDashboardName=Wallet-Tracker
+      - standaloneDashboardDatabase=neo4j
     depends_on:
-      - neo4j
+      neo4j:
+        condition: service_healthy
+    networks:
+      - wallet-tracker
+
+networks:
+  wallet-tracker:
+    driver: bridge
+
+volumes:
+  neo4j-data:
+    driver: local
+  redis-data:
+    driver: local
