@@ -1,0 +1,42 @@
+# Wallet Tracker Configuration
+
+app:
+  name: wallet-tracker
+  version: 1.0.0
+  environment: development
+  log_level: info
+  log_format: json
+
+database:
+  uri: neo4j://localhost:7687
+  username: neo4j
+  password: letmein
+  database: neo4j
+
+api:
+  provider: blockchain.info
+  # Add your API keys here
+  keys:
+    blockchain_info: ""
+    etherscan: ""
+    infura: ""
+  rate_limit: 10  # requests per second
+  timeout: 30s
+  max_retries: 3
+  retry_delay: 1s
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+  ttl: 1h
+
+tracker:
+  default_network: BTC
+  supported_networks:
+    - BTC
+    - ETH
+  batch_size: 100
+  max_depth: 10
+  concurrent_workers: 5

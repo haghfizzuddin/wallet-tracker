@@ -7,6 +7,7 @@ toolchain go1.22.3
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/aydinnyunus/blockchain v0.0.0-20220623151650-647ebea78f3b
+	github.com/briandowns/spinner v1.23.0
 	github.com/fatih/color v1.13.0
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
@@ -15,9 +16,12 @@ require (
 	github.com/k0kubun/pp v2.4.0+incompatible
 	github.com/neo4j/neo4j-go-driver/v4 v4.4.3
 	github.com/pkg/errors v0.9.1
+	github.com/schollz/progressbar/v3 v3.13.1
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
+	golang.org/x/time v0.3.0
 )
 
 require (
