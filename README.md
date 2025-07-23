@@ -1,312 +1,256 @@
-# Wallet Tracker CLI
+# 🚀 Universal Wallet Tracker
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+A powerful multi-chain blockchain wallet tracker supporting 50+ networks with a single API key!
 
-## 🚀 Overview
+![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
+![Go Version](https://img.shields.io/badge/go-%3E%3D1.19-blue.svg)
+![Chains Supported](https://img.shields.io/badge/chains-50%2B-green.svg)
 
-Wallet Tracker CLI is a powerful command-line tool for tracking cryptocurrency wallet transactions across blockchain networks. It features real-time transaction monitoring, exchange detection, and visual analytics through Neo4j graph database integration.
+## ✨ Features
 
-### Key Features
-- 🔍 **Real-time wallet tracking** - Monitor blockchain transactions as they happen
-- 🏦 **Exchange detection** - Identify transactions to/from major exchanges
-- 📊 **Visual analytics** - Neo4j integration with NeoDash for graph visualization
-- 🔄 **WebSocket support** - Stream live transaction data
-- 💾 **Redis caching** - Improved performance with intelligent caching
-- 🛡️ **Robust error handling** - Retry mechanisms and graceful failure recovery
+- 🌐 **Multi-Chain Support**: Track wallets across Bitcoin, Ethereum, BSC, Polygon, Arbitrum, and 50+ other chains
+- 🔑 **Single API Key**: Use Etherscan's V2 API - one key for all EVM chains!
+- 📊 **Rich Transaction Details**: View amounts, fees, timestamps, and USD values
+- 💸 **Fund Flow Visualization**: ASCII diagrams showing money flow
+- 🎨 **Beautiful Terminal UI**: Colored tables and formatted output
+- 🔒 **Secure**: API keys stored separately from code
+- ⚡ **Real-Time Data**: Live blockchain data with current prices
 
-## 📋 Table of Contents
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-  - [Track Wallet](#track-wallet)
-  - [WebSocket Streaming](#websocket-streaming)
-  - [Exchange Detection](#exchange-detection)
-  - [Visual Analytics](#visual-analytics)
-- [Development](#development)
-- [Architecture](#architecture)
-- [Contributing](#contributing)
-- [License](#license)
+## 📋 Supported Networks
 
-## Prerequisites
+### No API Key Required
+- Bitcoin (BTC)
 
-- Go 1.19 or higher
-- Docker & Docker Compose (for Neo4j and Redis)
-- Git
+### With Etherscan API Key (One key for all!)
+- Ethereum (ETH)
+- Binance Smart Chain (BSC)
+- Polygon (MATIC)
+- Arbitrum (ARB)
+- Optimism (OP)
+- Base (BASE)
+- Avalanche (AVAX)
+- Fantom (FTM)
+- Blast (BLAST)
+- Scroll (SCROLL)
+- And 40+ more chains!
 
-## Installation
+## 🚀 Quick Start
 
-### Option 1: Install from source
-
+### 1. Clone and Build
 ```bash
-# Clone the repository
 git clone https://github.com/haghfizzuddin/wallet-tracker.git
 cd wallet-tracker
-
-# Install dependencies
-go mod download
-
-# Build the binary
-go build -o wallet-tracker cmd/wallet-tracker/main.go
-
-# Make it executable
-chmod +x wallet-tracker
+chmod +x build_v2.sh
+./build_v2.sh
 ```
 
-### Option 2: Using go install
+### 2. Configure API Key
+Get your free API key from [Etherscan](https://etherscan.io/apis) (works for all chains!)
 
 ```bash
-go install github.com/haghfizzuddin/wallet-tracker/cmd/wallet-tracker@latest
+# Method 1: Interactive setup
+./tracker config
+
+# Method 2: Environment variable
+export ETHERSCAN_API_KEY=your_key_here
+
+# Method 3: Config file
+cp tracker-config.json.example tracker-config.json
+# Edit the file with your key
 ```
 
-### Option 3: Download pre-built binary
-
-Check the [releases page](https://github.com/haghfizzuddin/wallet-tracker/releases) for pre-built binaries for your platform.
-
-## Configuration
-
-### Quick Start with Docker Compose
-
+### 3. Track Wallets!
 ```bash
-# Start Neo4j and Redis
-docker-compose up -d
+# Bitcoin (no API key needed)
+./tracker 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 
-# Copy environment example
-cp .env.example .env
+# Ethereum
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 
-# Edit .env with your credentials
-nano .env
+# Arbitrum
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --network ARB
+
+# Show fund flow diagram
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --flow
 ```
 
-### Configuration File (config.yaml)
+## 📸 Screenshots
 
-Create a `config.yaml` for advanced configuration:
+### Transaction Tracking
+```
+╔══════════════════════════════════════════════════════════════════╗
+║         UNIVERSAL BLOCKCHAIN TRACKER v5.0 (V2 API)              ║
+╚══════════════════════════════════════════════════════════════════╝
 
-```yaml
-app:
-  log_level: info      # debug, info, warn, error
-  log_format: json     # json or text
+📊 Tracking: 0xd8dA...6045
+🌐 Network: Ethereum (Chain ID: 1)
+🕒 Time: 2025-01-23 12:45:00
+──────────────────────────────────────────────────────────────────────
 
-database:
-  uri: neo4j://localhost:7687
-  username: neo4j
-  password: your_password_here
+ #  TYPE  TIME   FROM → TO         AMOUNT        USD VALUE  STATUS
+ 1  IN    12:30  0x123...→[TRACKED] 1.5000 ETH   $3,525.00  ✅
+ 2  OUT   11:45  [TRACKED]→0x456... 0.5000 ETH   $1,175.00  ✅
+```
 
-api:
-  rate_limit: 10       # requests per second
-  max_retries: 3
-  retry_delay: 1s
+### Fund Flow Visualization
+```
+💸 Fund Flow Visualization
+──────────────────────────────────────────────────────────────────────
+📥 INFLOWS:
+  0x123...def         1.500000 ETH
 
-redis:
-  host: localhost
-  port: 6379
-  ttl: 1h             # cache time-to-live
+  [0xd8dA...6045]
+
+📤 OUTFLOWS:
+  0x456...789         0.500000 ETH
+```
+
+## 🛠️ Development
+
+### Prerequisites
+- Go 1.19 or higher
+- Git
+
+### Building from Source
+```bash
+# Standard build
+go build -o tracker tracker_v2_api.go
+
+# Build with all features
+make build
+```
+
+### Project Structure
+```
+wallet-tracker/
+├── tracker_v2_api.go          # Main V2 API implementation
+├── universal_tracker_secure.go # Secure config management
+├── build_v2.sh               # Build script
+├── tracker-config.json.example # Config template
+└── README.md                 # This file
+```
+
+## 🔧 Configuration
+
+### API Keys
+- Get free API key: https://etherscan.io/apis
+- Works for ALL supported chains (V2 API)
+- Multiple storage options (env, file, interactive)
+
+### Config File Format
+```json
+{
+  "etherscan_api_key": "YOUR_API_KEY_HERE"
+}
 ```
 
 ### Environment Variables
-
-All configuration can be overridden with environment variables:
-
 ```bash
-export WALLET_TRACKER_DATABASE_URI=neo4j://localhost:7687
-export WALLET_TRACKER_DATABASE_USERNAME=neo4j
-export WALLET_TRACKER_DATABASE_PASSWORD=your_password
-export WALLET_TRACKER_APP_LOG_LEVEL=debug
+export ETHERSCAN_API_KEY=your_key_here
 ```
 
-## Usage
+## 📚 Usage Examples
 
-### Track Wallet
-
-Basic wallet tracking:
-
+### Basic Tracking
 ```bash
-./wallet-tracker tracker track --wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+# Auto-detect network
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+
+# Specify network
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --network BSC
+
+# Limit transactions
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --limit 20
+
+# Show fund flow
+./tracker 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --flow
 ```
 
-![CLI Screenshot](img/2022-06-23_19-39.png)
-
-### Track with Network Specification
-
+### Advanced Usage
 ```bash
-./wallet-tracker tracker track --wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa --network BTC
+# Track on multiple chains
+for chain in ETH BSC MATIC ARB OP; do
+  echo "Checking $chain..."
+  ./tracker 0xYourAddress --network $chain
+done
+
+# Export to file (redirect output)
+./tracker 0xAddress > wallet_report.txt
 ```
 
-### WebSocket Streaming
+## 🚦 Development Phases
 
-Stream all transactions in real-time:
+### ✅ Phase 1: Core Functionality
+- Basic wallet tracking
+- Bitcoin support
+- Terminal UI improvements
 
-```bash
-./wallet-tracker tracker websocket --all
-```
+### ✅ Phase 2: Multi-Chain Support
+- Etherscan V2 API integration
+- 50+ chain support
+- Unified API key management
+- Enhanced UI with colors and tables
 
-![WebSocket Streaming](img/2022-06-23_20-05.png)
+### 🚧 Phase 3: Advanced Features (Planned)
+- Web dashboard
+- REST API server
+- Real-time monitoring
+- Risk scoring
+- Machine learning analytics
+- Cross-chain portfolio tracking
 
-### Exchange Detection
+## 🤝 Contributing
 
-Detect transactions involving known exchange wallets:
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-```bash
-./wallet-tracker tracker track --wallet 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa --detect-exchanges
-```
-
-### Visual Analytics
-
-Start NeoDash for graph visualization:
-
-```bash
-# Start NeoDash server
-./wallet-tracker neodash start
-```
-
-Then open http://localhost:5005 in your browser.
-
-![NeoDash Overview](img/2022-06-23_20-01.png)
-
-#### View specific transaction graphs:
-
-![Transaction Graph](img/2022-06-23_20-02.png)
-
-#### Explore the entire graph database:
-
-![Full Database](img/2022-06-23_20-03.png)
-
-### Get Exchange Wallets
-
-Query known exchange wallets from Redis:
-
-```bash
-./wallet-tracker redis get --exchanges binance --limit 5
-```
-
-## Development
-
-### Project Structure
-
-```
-wallet-tracker/
-├── cmd/wallet-tracker/    # Main application entry point
-├── cli/command/          # CLI commands implementation
-├── domain/               # Domain models and interfaces
-├── pkg/                  # Shared packages
-│   ├── cache/           # Caching layer
-│   ├── config/          # Configuration management
-│   ├── errors/          # Error handling
-│   ├── logger/          # Structured logging
-│   ├── progress/        # Progress indicators
-│   └── retry/           # Retry mechanisms
-├── neodash/             # NeoDash dashboard configuration
-└── docker-compose.yml   # Local development setup
-```
-
-### Building from Source
-
-```bash
-# Regular build
-go build -o wallet-tracker cmd/wallet-tracker/main.go
-
-# Build with version information
-go build -ldflags "-X main.version=1.0.0" -o wallet-tracker cmd/wallet-tracker/main.go
-
-# Cross-compilation examples
-GOOS=linux GOARCH=amd64 go build -o wallet-tracker-linux-amd64 cmd/wallet-tracker/main.go
-GOOS=darwin GOARCH=amd64 go build -o wallet-tracker-darwin-amd64 cmd/wallet-tracker/main.go
-GOOS=windows GOARCH=amd64 go build -o wallet-tracker-windows-amd64.exe cmd/wallet-tracker/main.go
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-go test ./...
-
-# Run with coverage
-go test -cover ./...
-
-# Run specific package tests
-go test ./pkg/retry
-```
-
-## Architecture
-
-The wallet tracker uses a modular architecture:
-
-1. **CLI Layer**: Command-line interface using Cobra
-2. **Domain Layer**: Business logic and models
-3. **Infrastructure Layer**: External service integrations (blockchain APIs, Neo4j, Redis)
-4. **Package Layer**: Shared utilities and cross-cutting concerns
-
-### Technology Stack
-
-- **Language**: Go
-- **Database**: Neo4j (graph database)
-- **Cache**: Redis
-- **CLI Framework**: Cobra
-- **Visualization**: NeoDash
-- **Container**: Docker
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Quick Start for Contributors
-
+### How to Contribute
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-### Development Guidelines
+## 🐛 Troubleshooting
 
-- Write tests for new features
-- Update documentation
-- Follow Go best practices
-- Use conventional commits
+### Common Issues
 
-## Roadmap
+**"API key issue" error**
+- Make sure you have configured your API key correctly
+- Check that your key has not exceeded rate limits
 
-- [ ] Multi-blockchain support (Ethereum, BSC, Polygon)
-- [ ] Advanced pattern detection algorithms
-- [ ] REST API wrapper
-- [ ] Real-time alerting system
-- [ ] Machine learning integration
-- [ ] Distributed processing support
+**"No transactions found"**
+- The wallet might be new or have no transactions
+- Try a known active wallet for testing
 
-## License
+**Network auto-detection issues**
+- Use `--network` flag to specify the chain explicitly
+
+## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Original concept inspired by blockchain analysis needs
-- Built with love by the open-source community
-- Special thanks to all contributors
+- [Etherscan](https://etherscan.io) for the amazing V2 API
+- [CoinGecko](https://coingecko.com) for price data
+- The Go community for excellent libraries
+- All contributors and users
 
-## Support
+## 📞 Support
 
-- 📧 Create an [issue](https://github.com/haghfizzuddin/wallet-tracker/issues) for bug reports
-- 💬 Join our [discussions](https://github.com/haghfizzuddin/wallet-tracker/discussions) for questions
-- 📖 Check the [wiki](https://github.com/haghfizzuddin/wallet-tracker/wiki) for detailed documentation
+- 🐛 Create an [issue](https://github.com/haghfizzuddin/wallet-tracker/issues) for bugs
+- 💬 Check [discussions](https://github.com/haghfizzuddin/wallet-tracker/discussions) for Q&A
+- ⭐ Star the project if you find it useful!
+- 🍴 Fork and contribute!
+
+## 🔗 Links
+
+- [Etherscan API Documentation](https://docs.etherscan.io)
+- [Supported Chain IDs](https://chainlist.org)
+- [Go Documentation](https://pkg.go.dev)
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/haghfizzuddin">haghfizzuddin</a>
+Made with ❤️ by <a href="https://github.com/haghfizzuddin">haghfizzuddin</a>
 </p>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/haghfizzuddin/wallet-tracker.svg?style=for-the-badge
-[contributors-url]: https://github.com/haghfizzuddin/wallet-tracker/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/haghfizzuddin/wallet-tracker.svg?style=for-the-badge
-[forks-url]: https://github.com/haghfizzuddin/wallet-tracker/network/members
-[stars-shield]: https://img.shields.io/github/stars/haghfizzuddin/wallet-tracker.svg?style=for-the-badge
-[stars-url]: https://github.com/haghfizzuddin/wallet-tracker/stargazers
-[issues-shield]: https://img.shields.io/github/issues/haghfizzuddin/wallet-tracker.svg?style=for-the-badge
-[issues-url]: https://github.com/haghfizzuddin/wallet-tracker/issues
-[license-shield]: https://img.shields.io/github/license/haghfizzuddin/wallet-tracker.svg?style=for-the-badge
-[license-url]: https://github.com/haghfizzuddin/wallet-tracker/blob/main/LICENSE
