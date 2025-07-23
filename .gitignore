@@ -1,42 +1,38 @@
+# API Keys and Config Files
+tracker-config.json
+.tracker-config.json
+*.env
+.env.*
+
+# Binaries
+tracker
+wallet-tracker
+wallet-tracker-*
+multi-chain-tracker
+*.exe
+
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
 
-# Binaries
-dist/
-*.exe
-*.dll
-*.so
-*.dylib
-wallet-tracker
-
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool
-*.out
-
-# Dependency directories
-vendor/
-
-# Go workspace file
-go.work
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
+
+# Go
+vendor/
+*.test
+*.out
 
 # Logs
 *.log
 
-# Temporary files
+# Temporary
 *.tmp
 *.temp
+
+# Don't ignore example files
+!*.example
+!tracker-config.json.example

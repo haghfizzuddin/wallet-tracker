@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Environment variables for API keys
+export ETHERSCAN_API_KEY="your_etherscan_key_here"
+export BSCSCAN_API_KEY="your_bscscan_key_here"
+export POLYGON_API_KEY="your_polygon_key_here"
+
+# Run the tracker
+./tracker "$@"
