@@ -18,7 +18,7 @@ import (
 )
 
 // Real-time monitoring structures
-type RealTimeMonitor struct {
+type LiveMonitor struct {
 	Address         string
 	Analyzer        *BehavioralAnalyzer
 	LastBlockNumber string
@@ -77,16 +77,14 @@ func runRealTimeMonitor(cmd *cobra.Command, args []string) {
 			BenfordDeviationLimit: 0.15,
 		},
 		historicalData: make(map[string]*AddressHistory),
-		realTimeMonitor: &RealTimeMonitor{
-			etherscanLabels: make(map[string]string),
-		},
+		realTimeMonitor: nil,
 	}
 
 	// Load known addresses
 	analyzer.loadKnownAddresses()
 
 	// Initialize real-time monitor
-	monitor := &RealTimeMonitor{
+	monitor := &LiveMonitor{
 		Address:        address,
 		Analyzer:       analyzer,
 		AlertThreshold: 0.6,
@@ -178,7 +176,7 @@ func runRealTimeMonitor(cmd *cobra.Command, args []string) {
 	}
 }
 
-func (m *RealTimeMonitor) getRecentTransactions() ([]Transaction, error) {
+func (m *LiveMonitor) getRecentTransactions() ([]Transaction, error) {
 	url := fmt.Sprintf("https://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&sort=desc&page=1&offset=10&apikey=%s",
 		m.Address, m.Analyzer.config.EtherscanAPIKey)
 
@@ -200,7 +198,7 @@ func (m *RealTimeMonitor) getRecentTransactions() ([]Transaction, error) {
 	return result.Result, nil
 }
 
-func (m *RealTimeMonitor) checkNewTransactions() ([]Transaction, error) {
+func (m *LiveMonitor) checkNewTransactions() ([]Transaction, error) {
 	if m.LastBlockNumber == "" {
 		return m.getRecentTransactions()
 	}
@@ -233,7 +231,7 @@ func (m *RealTimeMonitor) checkNewTransactions() ([]Transaction, error) {
 	return result.Result, nil
 }
 
-func (m *RealTimeMonitor) analyzeTransaction(tx Transaction) *Alert {
+func (m *LiveMonitor) analyzeTransaction(tx Transaction) *Alert {
 	// Quick risk assessment of individual transaction
 	riskScore := 0.0
 	alertType := "normal"
@@ -307,7 +305,7 @@ func (m *RealTimeMonitor) analyzeTransaction(tx Transaction) *Alert {
 	return nil
 }
 
-func (m *RealTimeMonitor) displaySummary() {
+func (m *LiveMonitor) displaySummary() {
 	fmt.Println("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println("📊 MONITORING SUMMARY")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -456,7 +454,7 @@ type BehavioralAnalyzer struct {
 	knownAddresses   *AddressDB
 	riskThresholds   RiskThresholds
 	historicalData   map[string]*AddressHistory
-	realTimeMonitor  *RealTimeMonitor
+	realTimeMonitor  interface{}
 }
 
 type RiskThresholds struct {
