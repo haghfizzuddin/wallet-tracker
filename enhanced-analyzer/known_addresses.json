@@ -1,0 +1,30 @@
+{
+  "exchanges": {
+    "0x28c6c06298d514db089934071355e5743bf21d60": "Binance Hot Wallet",
+    "0x3cd751e6b0078be393132286c442345e5dc49699": "Coinbase",
+    "0x2910543af39aba0cd09dbb2d50200b3e800a63d2": "Kraken"
+  },
+  "mixers": {
+    "0x910cbd523d972eb0a6f4cae4618ad62622b39dbf": "Tornado Cash 1 ETH",
+    "0xa160cdab225685da1d56aa342ad8841c3b53f291": "Tornado Cash 10 ETH",
+    "0xfd8610d20aa15b7b2e3be39b396a1bc3516c7144": "Tornado Cash 100 ETH"
+  },
+  "hackers": {
+    "0x098b716b8aaf21512996dc57eb0615e2383e2f96": {
+      "name": "Ronin Bridge Hacker",
+      "amount_stolen": "173600 ETH + 25.5M USDC",
+      "date": "2022-03-23",
+      "hack_type": "Bridge Exploit"
+    },
+    "0xb66cd966670d962c227b3eaba30a872dbfb995db": {
+      "name": "Euler Finance Hacker",
+      "amount_stolen": "197M USD",
+      "date": "2023-03-13",
+      "hack_type": "Flash Loan"
+    }
+  },
+  "contracts": {
+    "0x1a2a1c938ce3ec39b6d47113c7955baa9dd454f2": "Ronin Bridge",
+    "0x7a250d5630b4cf539739df2c5dacb4c659f2488d": "Uniswap V2 Router"
+  }
+}

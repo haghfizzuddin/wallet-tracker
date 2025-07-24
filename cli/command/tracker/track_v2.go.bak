@@ -1,0 +1,364 @@
+package tracker
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/aydinnyunus/wallet-tracker/cli/command/repository"
+	models "github.com/aydinnyunus/wallet-tracker/domain/repository"
+	"github.com/fatih/color"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+func TrackCommandV2() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "trackv2",
+		Short: "Enhanced wallet tracking with better UI",
+		Long: `Track cryptocurrency wallets across multiple blockchains with detailed transaction information.
+Supports Bitcoin, Ethereum, BSC, and more.`,
+		RunE: runTrackV2,
+	}
+
+	// Enhanced flags
+	cmd.Flags().StringP("wallet", "w", "", "Wallet address to track (required)")
+	cmd.Flags().StringP("network", "n", "auto", "Network: BTC, ETH, BSC, MATIC, or auto-detect")
+	cmd.Flags().IntP("limit", "l", 50, "Number of transactions to display")
+	cmd.Flags().BoolP("show-usd", "u", true, "Show USD values")
+	cmd.Flags().BoolP("show-flow", "f", false, "Show ASCII fund flow diagram")
+	cmd.Flags().BoolP("export", "e", false, "Export results to file")
+	cmd.Flags().StringP("output", "o", "json", "Output format: json, csv, txt")
+	
+	cmd.MarkFlagRequired("wallet")
+	
+	return cmd
+}
+
+func runTrackV2(cmd *cobra.Command, args []string) error {
+	wallet, _ := cmd.Flags().GetString("wallet")
+	network, _ := cmd.Flags().GetString("network")
+	limit, _ := cmd.Flags().GetInt("limit")
+	showUSD, _ := cmd.Flags().GetBool("show-usd")
+	showFlow, _ := cmd.Flags().GetBool("show-flow")
+	
+	// Auto-detect network if needed
+	if network == "auto" {
+		network = detectNetwork(wallet)
+	}
+	
+	// Display header
+	displayHeader(wallet, network)
+	
+	// Get transactions based on network
+	var transactions []Transaction
+	var err error
+	
+	switch strings.ToUpper(network) {
+	case "BTC":
+		transactions, err = getBTCTransactions(wallet, limit)
+	case "ETH":
+		transactions, err = getETHTransactions(wallet, limit)
+	case "BSC":
+		transactions, err = getBSCTransactions(wallet, limit)
+	case "MATIC":
+		transactions, err = getPolygonTransactions(wallet, limit)
+	default:
+		return fmt.Errorf("unsupported network: %s", network)
+	}
+	
+	if err != nil {
+		return fmt.Errorf("failed to fetch transactions: %w", err)
+	}
+	
+	// Display transactions in a beautiful table
+	displayTransactionTable(transactions, wallet, showUSD)
+	
+	// Show fund flow if requested
+	if showFlow {
+		displayFundFlow(transactions, wallet)
+	}
+	
+	// Display summary
+	displaySummary(transactions, wallet, network)
+	
+	return nil
+}
+
+func displayHeader(wallet, network string) {
+	fmt.Println()
+	color.Cyan("╔══════════════════════════════════════════════════════════════════╗")
+	color.Cyan("║                    WALLET TRACKER V2.0                           ║")
+	color.Cyan("╚══════════════════════════════════════════════════════════════════╝")
+	fmt.Println()
+	
+	color.Yellow("📊 Tracking Wallet: %s", wallet)
+	color.Yellow("🌐 Network: %s", network)
+	color.Yellow("🕒 Time: %s", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Println(strings.Repeat("─", 70))
+}
+
+func displayTransactionTable(txs []Transaction, myWallet string, showUSD bool) {
+	t := table.NewWriter()
+	t.SetStyle(table.StyleColoredBright)
+	
+	// Configure headers
+	headers := table.Row{"#", "Type", "Hash", "From → To", "Amount", "Time", "Status"}
+	if showUSD {
+		headers = append(headers[:5], "USD Value", headers[5:]...)
+	}
+	t.AppendHeader(headers)
+	
+	for i, tx := range txs {
+		txType := "IN"
+		typeColor := text.FgGreen
+		if strings.EqualFold(tx.From, myWallet) {
+			txType = "OUT"
+			typeColor = text.FgRed
+		}
+		
+		// Format addresses with labels
+		fromAddr := formatAddress(tx.From, tx.FromLabel)
+		toAddr := formatAddress(tx.To, tx.ToLabel)
+		
+		row := table.Row{
+			i + 1,
+			text.Colors{typeColor}.Sprint(txType),
+			truncateHash(tx.Hash),
+			fmt.Sprintf("%s → %s", fromAddr, toAddr),
+			formatAmount(tx.Amount, tx.Symbol),
+			tx.Time.Format("01/02 15:04"),
+			getStatusIcon(tx.Confirmations),
+		}
+		
+		if showUSD {
+			usdValue := fmt.Sprintf("$%.2f", tx.USDValue)
+			row = append(row[:5], usdValue, row[5:]...)
+		}
+		
+		t.AppendRow(row)
+	}
+	
+	t.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 1, AutoMerge: true},
+		{Number: 4, WidthMax: 40},
+	})
+	
+	fmt.Println(t.Render())
+}
+
+func displayFundFlow(txs []Transaction, wallet string) {
+	fmt.Println()
+	color.Cyan("💸 Fund Flow Visualization")
+	fmt.Println(strings.Repeat("─", 70))
+	
+	// Simple ASCII flow diagram
+	inflows := make(map[string]float64)
+	outflows := make(map[string]float64)
+	
+	for _, tx := range txs {
+		if strings.EqualFold(tx.To, wallet) {
+			inflows[tx.From] += tx.Amount
+		} else {
+			outflows[tx.To] += tx.Amount
+		}
+	}
+	
+	// Display inflows
+	color.Green("📥 INFLOWS:")
+	for addr, amount := range inflows {
+		label := getAddressLabel(addr)
+		bar := generateBar(amount, getMaxAmount(inflows))
+		fmt.Printf("  %s %s %.4f\n", formatShortAddress(addr, label), bar, amount)
+	}
+	
+	// Display wallet in center
+	fmt.Println()
+	color.Yellow("  ╔════════════════════╗")
+	color.Yellow("  ║   YOUR WALLET      ║")
+	color.Yellow("  ║ %s ║", truncateAddress(wallet))
+	color.Yellow("  ╚════════════════════╝")
+	fmt.Println()
+	
+	// Display outflows
+	color.Red("📤 OUTFLOWS:")
+	for addr, amount := range outflows {
+		label := getAddressLabel(addr)
+		bar := generateBar(amount, getMaxAmount(outflows))
+		fmt.Printf("  %s %s %.4f\n", formatShortAddress(addr, label), bar, amount)
+	}
+}
+
+func displaySummary(txs []Transaction, wallet, network string) {
+	fmt.Println()
+	fmt.Println(strings.Repeat("═", 70))
+	color.Cyan("📈 SUMMARY")
+	fmt.Println(strings.Repeat("─", 70))
+	
+	var totalIn, totalOut, totalFees float64
+	var inCount, outCount int
+	
+	for _, tx := range txs {
+		if strings.EqualFold(tx.To, wallet) {
+			totalIn += tx.Amount
+			inCount++
+		} else {
+			totalOut += tx.Amount
+			outCount++
+		}
+		totalFees += tx.Fee
+	}
+	
+	netFlow := totalIn - totalOut
+	
+	// Create summary table
+	t := table.NewWriter()
+	t.SetStyle(table.StyleLight)
+	
+	t.AppendRows([]table.Row{
+		{"Total Transactions", len(txs)},
+		{"Incoming", fmt.Sprintf("%d (%.4f %s)", inCount, totalIn, network)},
+		{"Outgoing", fmt.Sprintf("%d (%.4f %s)", outCount, totalOut, network)},
+		{"Net Flow", formatNetFlow(netFlow, network)},
+		{"Total Fees", fmt.Sprintf("%.6f %s", totalFees, network)},
+	})
+	
+	fmt.Println(t.Render())
+	
+	// Risk indicators
+	displayRiskIndicators(txs, wallet)
+}
+
+func displayRiskIndicators(txs []Transaction, wallet string) {
+	fmt.Println()
+	color.Yellow("⚠️  RISK INDICATORS:")
+	
+	// Check for exchange interactions
+	exchangeCount := 0
+	for _, tx := range txs {
+		if tx.FromLabel != "" || tx.ToLabel != "" {
+			exchangeCount++
+		}
+	}
+	
+	if exchangeCount > 0 {
+		fmt.Printf("  • Exchange Interactions: %d transactions\n", exchangeCount)
+	}
+	
+	// Check for high-value transactions
+	highValueCount := 0
+	for _, tx := range txs {
+		if tx.USDValue > 10000 {
+			highValueCount++
+		}
+	}
+	
+	if highValueCount > 0 {
+		color.Red("  • High-Value Transactions: %d (>$10,000)\n", highValueCount)
+	}
+	
+	// Add more risk indicators as needed
+}
+
+// Helper functions
+func detectNetwork(wallet string) string {
+	if strings.HasPrefix(wallet, "0x") && len(wallet) == 42 {
+		return "ETH" // Could be ETH, BSC, or MATIC - need additional logic
+	} else if strings.HasPrefix(wallet, "1") || strings.HasPrefix(wallet, "3") || strings.HasPrefix(wallet, "bc1") {
+		return "BTC"
+	}
+	return "UNKNOWN"
+}
+
+func formatAddress(addr, label string) string {
+	if label != "" {
+		return fmt.Sprintf("%s (%s)", truncateAddress(addr), color.CyanString(label))
+	}
+	return truncateAddress(addr)
+}
+
+func truncateAddress(addr string) string {
+	if len(addr) > 16 {
+		return addr[:6] + "..." + addr[len(addr)-4:]
+	}
+	return addr
+}
+
+func truncateHash(hash string) string {
+	if len(hash) > 10 {
+		return hash[:10] + "..."
+	}
+	return hash
+}
+
+func formatAmount(amount float64, symbol string) string {
+	return fmt.Sprintf("%.6f %s", amount, symbol)
+}
+
+func getStatusIcon(confirmations int) string {
+	if confirmations == 0 {
+		return "⏳"
+	} else if confirmations < 6 {
+		return "⚡"
+	}
+	return "✅"
+}
+
+func generateBar(value, max float64) string {
+	if max == 0 {
+		return ""
+	}
+	barLength := int((value / max) * 20)
+	return strings.Repeat("█", barLength) + strings.Repeat("░", 20-barLength)
+}
+
+func formatNetFlow(amount float64, symbol string) string {
+	if amount > 0 {
+		return color.GreenString("+%.4f %s", amount, symbol)
+	} else if amount < 0 {
+		return color.RedString("%.4f %s", amount, symbol)
+	}
+	return fmt.Sprintf("%.4f %s", amount, symbol)
+}
+
+func getMaxAmount(amounts map[string]float64) float64 {
+	max := 0.0
+	for _, amount := range amounts {
+		if amount > max {
+			max = amount
+		}
+	}
+	return max
+}
+
+func formatShortAddress(addr, label string) string {
+	short := truncateAddress(addr)
+	if label != "" {
+		return fmt.Sprintf("%-20s", short+" ["+label+"]")
+	}
+	return fmt.Sprintf("%-20s", short)
+}
+
+func getAddressLabel(addr string) string {
+	// This would check against known addresses database
+	// For now, return empty
+	return ""
+}
+
+// Transaction type for all networks
+type Transaction struct {
+	Hash          string
+	From          string
+	FromLabel     string
+	To            string
+	ToLabel       string
+	Amount        float64
+	Symbol        string
+	Fee           float64
+	Time          time.Time
+	BlockNumber   int64
+	Confirmations int
+	USDValue      float64
+}
