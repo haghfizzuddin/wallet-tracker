@@ -20,5 +20,10 @@ if [ $? -eq 0 ]; then
     echo "  2. known_addresses.json (optional, will work without it)"
 else
     echo "❌ Build failed!"
+    echo ""
+    echo "Common issues:"
+    echo "  1. Missing Go dependencies - run: go mod init && go mod tidy"
+    echo "  2. Missing config file - create enhanced-analyzer-config.json"
+    echo "  3. Syntax errors - check the error messages above"
     exit 1
 fi

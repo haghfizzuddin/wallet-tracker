@@ -182,6 +182,7 @@ func runAnalysis(cmd *cobra.Command, args []string) {
 		historicalData: make(map[string]*AddressHistory),
 		realTimeMonitor: &RealTimeMonitor{
 			etherscanLabels: make(map[string]string),
+			lastUpdate:      time.Now(),
 		},
 	}
 
@@ -307,8 +308,8 @@ func (ba *BehavioralAnalyzer) analyzeBehavioralPatterns(address string, txs []Tr
 		flags = append(flags, *newAddressFlag)
 	}
 
-	// 4. Gas anomalies - use enhanced analysis
-	gasFlags := ba.analyzeGasAnomaliesEnhanced(txs)
+	// 4. Gas anomalies
+	gasFlags := ba.analyzeGasAnomalies(txs)
 	flags = append(flags, gasFlags...)
 
 	// 5. Interaction patterns
