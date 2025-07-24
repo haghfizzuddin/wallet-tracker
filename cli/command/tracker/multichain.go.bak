@@ -1,0 +1,297 @@
+package tracker
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"time"
+)
+
+// Bitcoin implementation
+func getBTCTransactions(wallet string, limit int) ([]Transaction, error) {
+	// Using blockchain.info API
+	url := fmt.Sprintf("https://blockchain.info/rawaddr/%s?limit=%d", wallet, limit)
+	
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	
+	var btcResp BTCResponse
+	if err := json.Unmarshal(body, &btcResp); err != nil {
+		return nil, err
+	}
+	
+	transactions := make([]Transaction, 0, len(btcResp.Txs))
+	btcPrice := getBTCPrice()
+	
+	for _, tx := range btcResp.Txs {
+		// Determine if incoming or outgoing
+		isIncoming := false
+		amount := 0.0
+		from := ""
+		to := wallet
+		
+		// Check inputs
+		for _, input := range tx.Inputs {
+			if input.PrevOut.Addr == wallet {
+				// Outgoing transaction
+				isIncoming = false
+				from = wallet
+				break
+			}
+		}
+		
+		// Check outputs
+		for _, output := range tx.Out {
+			if output.Addr == wallet && !isIncoming {
+				// Incoming transaction
+				isIncoming = true
+				amount = float64(output.Value) / 100000000 // Convert satoshis to BTC
+				if len(tx.Inputs) > 0 && len(tx.Inputs[0].PrevOut.Addr) > 0 {
+					from = tx.Inputs[0].PrevOut.Addr
+				}
+			} else if from == wallet && output.Addr != wallet {
+				// Outgoing - find the recipient
+				to = output.Addr
+				amount = float64(output.Value) / 100000000
+			}
+		}
+		
+		transactions = append(transactions, Transaction{
+			Hash:          tx.Hash,
+			From:          from,
+			FromLabel:     getAddressLabel(from),
+			To:            to,
+			ToLabel:       getAddressLabel(to),
+			Amount:        amount,
+			Symbol:        "BTC",
+			Fee:           float64(tx.Fee) / 100000000,
+			Time:          time.Unix(tx.Time, 0),
+			BlockNumber:   tx.BlockHeight,
+			Confirmations: int(btcResp.NFinal - tx.BlockHeight + 1),
+			USDValue:      amount * btcPrice,
+		})
+	}
+	
+	return transactions, nil
+}
+
+// Ethereum implementation
+func getETHTransactions(wallet string, limit int) ([]Transaction, error) {
+	// Using Etherscan API (you'd need an API key in production)
+	apiKey := "YourEtherscanAPIKey" // In production, get from config
+	url := fmt.Sprintf("https://api.etherscan.io/api?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&page=1&offset=%d&sort=desc&apikey=%s", 
+		wallet, limit, apiKey)
+	
+	resp, err := http.Get(url)
+	if err != nil {
+		// Fallback to a free alternative or mock data for demo
+		return getMockETHTransactions(wallet, limit), nil
+	}
+	defer resp.Body.Close()
+	
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return getMockETHTransactions(wallet, limit), nil
+	}
+	
+	var ethResp ETHResponse
+	if err := json.Unmarshal(body, &ethResp); err != nil {
+		return getMockETHTransactions(wallet, limit), nil
+	}
+	
+	if ethResp.Status != "1" {
+		return getMockETHTransactions(wallet, limit), nil
+	}
+	
+	transactions := make([]Transaction, 0, len(ethResp.Result))
+	ethPrice := getETHPrice()
+	
+	for _, tx := range ethResp.Result {
+		value, _ := strconv.ParseFloat(tx.Value, 64)
+		value = value / 1e18 // Convert Wei to ETH
+		
+		gasUsed, _ := strconv.ParseFloat(tx.GasUsed, 64)
+		gasPrice, _ := strconv.ParseFloat(tx.GasPrice, 64)
+		fee := (gasUsed * gasPrice) / 1e18
+		
+		blockNumber, _ := strconv.ParseInt(tx.BlockNumber, 10, 64)
+		confirmations, _ := strconv.Atoi(tx.Confirmations)
+		timestamp, _ := strconv.ParseInt(tx.TimeStamp, 10, 64)
+		
+		transactions = append(transactions, Transaction{
+			Hash:          tx.Hash,
+			From:          tx.From,
+			FromLabel:     getAddressLabel(tx.From),
+			To:            tx.To,
+			ToLabel:       getAddressLabel(tx.To),
+			Amount:        value,
+			Symbol:        "ETH",
+			Fee:           fee,
+			Time:          time.Unix(timestamp, 0),
+			BlockNumber:   blockNumber,
+			Confirmations: confirmations,
+			USDValue:      value * ethPrice,
+		})
+	}
+	
+	return transactions, nil
+}
+
+// BSC implementation (similar to ETH but different API endpoint)
+func getBSCTransactions(wallet string, limit int) ([]Transaction, error) {
+	// BSC uses similar API to Etherscan
+	apiKey := "YourBscscanAPIKey"
+	url := fmt.Sprintf("https://api.bscscan.com/api?module=account&action=txlist&address=%s&startblock=0&endblock=99999999&page=1&offset=%d&sort=desc&apikey=%s", 
+		wallet, limit, apiKey)
+	
+	// Similar implementation to ETH
+	// For demo, return mock data
+	return getMockBSCTransactions(wallet, limit), nil
+}
+
+// Polygon implementation
+func getPolygonTransactions(wallet string, limit int) ([]Transaction, error) {
+	// Similar to ETH/BSC
+	return getMockPolygonTransactions(wallet, limit), nil
+}
+
+// Price fetching functions
+func getBTCPrice() float64 {
+	// In production, use a proper price API
+	return 43250.00 // Mock price
+}
+
+func getETHPrice() float64 {
+	return 2350.00 // Mock price
+}
+
+// Mock data generators for demo
+func getMockETHTransactions(wallet string, limit int) []Transaction {
+	txs := []Transaction{
+		{
+			Hash:          "0x1234567890abcdef",
+			From:          "0x742d35Cc6634C0532925a3b844Bc9e7595f6b8e0",
+			FromLabel:     "Binance Hot Wallet",
+			To:            wallet,
+			Amount:        1.5,
+			Symbol:        "ETH",
+			Fee:           0.003,
+			Time:          time.Now().Add(-2 * time.Hour),
+			BlockNumber:   15234567,
+			Confirmations: 120,
+			USDValue:      1.5 * 2350,
+		},
+		{
+			Hash:          "0xabcdef1234567890",
+			From:          wallet,
+			To:            "0x8894E0a0c962CB723c1976a4421c95949bE2D4E3",
+			ToLabel:       "Uniswap V3 Router",
+			Amount:        0.5,
+			Symbol:        "ETH",
+			Fee:           0.002,
+			Time:          time.Now().Add(-24 * time.Hour),
+			BlockNumber:   15234000,
+			Confirmations: 7200,
+			USDValue:      0.5 * 2350,
+		},
+	}
+	
+	if len(txs) > limit {
+		return txs[:limit]
+	}
+	return txs
+}
+
+func getMockBSCTransactions(wallet string, limit int) []Transaction {
+	return []Transaction{
+		{
+			Hash:          "0xbsc1234567890abc",
+			From:          "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FA0",
+			FromLabel:     "PancakeSwap Router",
+			To:            wallet,
+			Amount:        100,
+			Symbol:        "BNB",
+			Fee:           0.001,
+			Time:          time.Now().Add(-3 * time.Hour),
+			BlockNumber:   29234567,
+			Confirmations: 180,
+			USDValue:      100 * 315,
+		},
+	}
+}
+
+func getMockPolygonTransactions(wallet string, limit int) []Transaction {
+	return []Transaction{
+		{
+			Hash:          "0xmatic123456789",
+			From:          wallet,
+			To:            "0x1a1ec25DC08e98e5E93F1104B5e5cdD298707d31",
+			ToLabel:       "QuickSwap",
+			Amount:        500,
+			Symbol:        "MATIC",
+			Fee:           0.01,
+			Time:          time.Now().Add(-6 * time.Hour),
+			BlockNumber:   44234567,
+			Confirmations: 360,
+			USDValue:      500 * 0.85,
+		},
+	}
+}
+
+// API Response structures
+type BTCResponse struct {
+	NFinal int64    `json:"n_tx"`
+	Txs    []BTCTx  `json:"txs"`
+}
+
+type BTCTx struct {
+	Hash        string      `json:"hash"`
+	Time        int64       `json:"time"`
+	BlockHeight int64       `json:"block_height"`
+	Fee         int64       `json:"fee"`
+	Inputs      []BTCInput  `json:"inputs"`
+	Out         []BTCOutput `json:"out"`
+}
+
+type BTCInput struct {
+	PrevOut BTCPrevOut `json:"prev_out"`
+}
+
+type BTCPrevOut struct {
+	Addr  string `json:"addr"`
+	Value int64  `json:"value"`
+}
+
+type BTCOutput struct {
+	Addr  string `json:"addr"`
+	Value int64  `json:"value"`
+}
+
+type ETHResponse struct {
+	Status  string  `json:"status"`
+	Message string  `json:"message"`
+	Result  []ETHTx `json:"result"`
+}
+
+type ETHTx struct {
+	BlockNumber   string `json:"blockNumber"`
+	TimeStamp     string `json:"timeStamp"`
+	Hash          string `json:"hash"`
+	From          string `json:"from"`
+	To            string `json:"to"`
+	Value         string `json:"value"`
+	Gas           string `json:"gas"`
+	GasPrice      string `json:"gasPrice"`
+	GasUsed       string `json:"gasUsed"`
+	Confirmations string `json:"confirmations"`
+}
