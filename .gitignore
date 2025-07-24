@@ -1,38 +1,69 @@
-# API Keys and Config Files
-tracker-config.json
-.tracker-config.json
-*.env
-.env.*
-
-# Binaries
-tracker
-wallet-tracker
-wallet-tracker-*
-multi-chain-tracker
+# Binaries for programs and plugins
 *.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# IDE
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Build outputs
+/build/
+/dist/
+/analyzer
+/behavioral-analyzer
+/realtime-monitor
+/tracker
+/security-analyzer*
+/enhanced-analyzer/analyzer*
+/enhanced-analyzer/behavioral-analyzer
+/enhanced-analyzer/calibrated-analyzer
+/enhanced-analyzer/dynamic-analyzer
+/enhanced-analyzer/enhanced-analyzer*
+/enhanced-analyzer/final-analyzer
+/enhanced-analyzer/mock_analyzer*
+/enhanced-analyzer/risk-analyzer
+
+# Configuration files with sensitive data
+.env
+enhanced-analyzer-config.json
+enhanced-analyzer/enhanced-analyzer-config.json
+tracker-config.json
+
+# Data directories
+/data/
+/neodash/
+
+# IDE specific files
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 
-# OS
+# OS specific files
 .DS_Store
 Thumbs.db
 
-# Go
-vendor/
-*.test
-*.out
-
-# Logs
+# Log files
 *.log
 
-# Temporary
+# Temporary files
 *.tmp
 *.temp
+hack_analysis_*.json
 
-# Don't ignore example files
-!*.example
+# Keep example files
+!.env.example
 !tracker-config.json.example
+!run-tracker.sh.example

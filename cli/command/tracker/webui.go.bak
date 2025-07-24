@@ -1,0 +1,316 @@
+package tracker
+
+import (
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"net/http"
+	"os"
+	"time"
+)
+
+// StartWebUI starts a web interface for better visualization
+func StartWebUI(transactions []Transaction, wallet string) error {
+	// Create HTML template
+	htmlTemplate := `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wallet Tracker - {{.Wallet}}</title>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@latest/dist/vis-network.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/vis-network@latest/dist/vis-network.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        #mynetwork {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        .legend {
+            margin: 20px 0;
+            padding: 10px;
+            background: #333;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .in { color: #4CAF50; }
+        .out { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>Wallet Transaction Flow</h1>
+    <div class="stats">
+        <div class="stat-box">
+            <div>Total Transactions</div>
+            <div class="stat-value">{{.TotalTx}}</div>
+        </div>
+        <div class="stat-box">
+            <div>Incoming</div>
+            <div class="stat-value in">{{.IncomingTx}}</div>
+        </div>
+        <div class="stat-box">
+            <div>Outgoing</div>
+            <div class="stat-value out">{{.OutgoingTx}}</div>
+        </div>
+        <div class="stat-box">
+            <div>Unique Addresses</div>
+            <div class="stat-value">{{.UniqueAddresses}}</div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item"><span class="in">●</span> Incoming Transaction</div>
+        <div class="legend-item"><span class="out">●</span> Outgoing Transaction</div>
+        <div class="legend-item">○ Your Wallet</div>
+        <div class="legend-item">◆ Exchange</div>
+    </div>
+    
+    <div id="mynetwork"></div>
+    
+    <script type="text/javascript">
+        // Create nodes and edges from transaction data
+        var nodes = new vis.DataSet([
+            {id: '{{.Wallet}}', label: 'Your Wallet\n{{.WalletShort}}', color: '#FFC107', shape: 'circle', size: 30}
+        ]);
+        
+        var edges = new vis.DataSet([]);
+        
+        var nodeMap = {};
+        nodeMap['{{.Wallet}}'] = true;
+        
+        {{range .Transactions}}
+        // Add nodes
+        if (!nodeMap['{{.From}}']) {
+            nodes.add({
+                id: '{{.From}}',
+                label: '{{.FromLabel}}\n{{.FromShort}}',
+                color: '{{if .FromLabel}}#9C27B0{{else}}#2196F3{{end}}',
+                shape: '{{if .FromLabel}}diamond{{else}}box{{end}}'
+            });
+            nodeMap['{{.From}}'] = true;
+        }
+        
+        if (!nodeMap['{{.To}}']) {
+            nodes.add({
+                id: '{{.To}}',
+                label: '{{.ToLabel}}\n{{.ToShort}}',
+                color: '{{if .ToLabel}}#9C27B0{{else}}#2196F3{{end}}',
+                shape: '{{if .ToLabel}}diamond{{else}}box{{end}}'
+            });
+            nodeMap['{{.To}}'] = true;
+        }
+        
+        // Add edge
+        edges.add({
+            from: '{{.From}}',
+            to: '{{.To}}',
+            label: '{{.Amount}} {{.Symbol}}\n${{.USDValue}}',
+            color: '{{if eq .To $.Wallet}}#4CAF50{{else}}#f44336{{end}}',
+            arrows: 'to',
+            width: Math.min(5, Math.max(1, {{.Amount}} * 2))
+        });
+        {{end}}
+        
+        // Create network
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+        
+        var options = {
+            nodes: {
+                font: {
+                    color: '#ffffff',
+                    size: 12
+                },
+                borderWidth: 2
+            },
+            edges: {
+                font: {
+                    color: '#ffffff',
+                    size: 10,
+                    align: 'middle'
+                },
+                smooth: {
+                    type: 'curvedCW',
+                    roundness: 0.2
+                }
+            },
+            physics: {
+                forceAtlas2Based: {
+                    gravitationalConstant: -50,
+                    centralGravity: 0.01,
+                    springConstant: 0.02,
+                    springLength: 100,
+                    damping: 0.4
+                },
+                solver: 'forceAtlas2Based',
+                stabilization: {
+                    iterations: 1000
+                }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200
+            }
+        };
+        
+        var network = new vis.Network(container, data, options);
+    </script>
+</body>
+</html>
+`
+
+	// Prepare template data
+	type TemplateData struct {
+		Wallet          string
+		WalletShort     string
+		TotalTx         int
+		IncomingTx      int
+		OutgoingTx      int
+		UniqueAddresses int
+		Transactions    []TransactionView
+	}
+	
+	type TransactionView struct {
+		From       string
+		FromShort  string
+		FromLabel  string
+		To         string
+		ToShort    string
+		ToLabel    string
+		Amount     float64
+		Symbol     string
+		USDValue   float64
+	}
+	
+	// Count statistics
+	incoming := 0
+	outgoing := 0
+	addresses := make(map[string]bool)
+	
+	views := make([]TransactionView, len(transactions))
+	for i, tx := range transactions {
+		if tx.To == wallet {
+			incoming++
+		} else {
+			outgoing++
+		}
+		addresses[tx.From] = true
+		addresses[tx.To] = true
+		
+		views[i] = TransactionView{
+			From:      tx.From,
+			FromShort: truncateAddress(tx.From),
+			FromLabel: tx.FromLabel,
+			To:        tx.To,
+			ToShort:   truncateAddress(tx.To),
+			ToLabel:   tx.ToLabel,
+			Amount:    tx.Amount,
+			Symbol:    tx.Symbol,
+			USDValue:  tx.USDValue,
+		}
+	}
+	
+	data := TemplateData{
+		Wallet:          wallet,
+		WalletShort:     truncateAddress(wallet),
+		TotalTx:         len(transactions),
+		IncomingTx:      incoming,
+		OutgoingTx:      outgoing,
+		UniqueAddresses: len(addresses),
+		Transactions:    views,
+	}
+	
+	// Create HTTP server
+	tmpl, err := template.New("wallet").Parse(htmlTemplate)
+	if err != nil {
+		return err
+	}
+	
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		tmpl.Execute(w, data)
+	})
+	
+	http.HandleFunc("/api/transactions", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(transactions)
+	})
+	
+	fmt.Println("\n🌐 Web UI started at http://localhost:8080")
+	fmt.Println("Press Ctrl+C to stop")
+	
+	return http.ListenAndServe(":8080", nil)
+}
+
+// Add this to the track command
+func RunWebUICommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "webui",
+		Short: "Start web UI for transaction visualization",
+		Long:  "Launch a web interface to visualize wallet transactions with an interactive graph",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			wallet, _ := cmd.Flags().GetString("wallet")
+			network, _ := cmd.Flags().GetString("network")
+			limit, _ := cmd.Flags().GetInt("limit")
+			
+			// Get transactions
+			var transactions []Transaction
+			var err error
+			
+			switch network {
+			case "BTC":
+				transactions, err = getBTCTransactions(wallet, limit)
+			case "ETH":
+				transactions, err = getETHTransactions(wallet, limit)
+			default:
+				transactions = getMockETHTransactions(wallet, limit)
+			}
+			
+			if err != nil {
+				return err
+			}
+			
+			return StartWebUI(transactions, wallet)
+		},
+	}
+	
+	cmd.Flags().StringP("wallet", "w", "", "Wallet address to visualize")
+	cmd.Flags().StringP("network", "n", "ETH", "Network: BTC, ETH, BSC")
+	cmd.Flags().IntP("limit", "l", 50, "Number of transactions")
+	cmd.MarkFlagRequired("wallet")
+	
+	return cmd
+}

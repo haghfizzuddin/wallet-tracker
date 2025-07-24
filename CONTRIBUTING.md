@@ -1,108 +1,136 @@
 # Contributing to Wallet Tracker
 
-First off, thank you for considering contributing to Wallet Tracker! It's people like you that make Wallet Tracker such a great tool.
+We love your input! We want to make contributing to Wallet Tracker as easy and transparent as possible, whether it's:
 
-## Code of Conduct
+- Reporting a bug
+- Discussing the current state of the code
+- Submitting a fix
+- Proposing new features
+- Becoming a maintainer
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code.
+## We Develop with Github
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
-## How Can I Contribute?
+## We Use [Github Flow](https://guides.github.com/introduction/flow/index.html)
+Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
-### Reporting Bugs
-
-Before creating bug reports, please check existing issues as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
-
-* **Use a clear and descriptive title**
-* **Describe the exact steps which reproduce the problem**
-* **Provide specific examples to demonstrate the steps**
-* **Describe the behavior you observed after following the steps**
-* **Explain which behavior you expected to see instead and why**
-* **Include logs and error messages**
-
-### Suggesting Enhancements
-
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please include:
-
-* **Use a clear and descriptive title**
-* **Provide a step-by-step description of the suggested enhancement**
-* **Provide specific examples to demonstrate the steps**
-* **Describe the current behavior and explain which behavior you expected**
-* **Explain why this enhancement would be useful**
-
-### Pull Requests
-
-* Fill in the required template
-* Do not include issue numbers in the PR title
-* Follow the Go style guide
-* Include thoughtfully-worded, well-structured tests
-* Document new code
-* End all files with a newline
-
-## Development Process
-
-1. Fork the repo and create your branch from `main`
-2. If you've added code that should be tested, add tests
-3. If you've changed APIs, update the documentation
-4. Ensure the test suite passes
-5. Make sure your code lints
+1. Fork the repo and create your branch from `master`.
+2. If you've added code that should be tested, add tests.
+3. If you've changed APIs, update the documentation.
+4. Ensure the test suite passes.
+5. Make sure your code lints.
 6. Issue that pull request!
 
-## Styleguides
+## Any contributions you make will be under the MIT Software License
+In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-### Git Commit Messages
+## Report bugs using Github's [issues](https://github.com/yourusername/wallet-tracker/issues)
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](); it's that easy!
 
-* Use the present tense ("Add feature" not "Added feature")
-* Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-* Limit the first line to 72 characters or less
-* Reference issues and pull requests liberally after the first line
+## Write bug reports with detail, background, and sample code
 
-### Go Styleguide
+**Great Bug Reports** tend to have:
 
-* Follow the [Effective Go](https://golang.org/doc/effective_go.html) guidelines
-* Use `gofmt` to format your code
-* Use `golint` to lint your code
-* Write meaningful variable names
-* Comment exported functions and types
+- A quick summary and/or background
+- Steps to reproduce
+  - Be specific!
+  - Give sample code if you can
+- What you expected would happen
+- What actually happens
+- Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-### Testing
+## Development Setup
 
-* Write unit tests for new functionality
-* Ensure all tests pass before submitting PR
-* Aim for high test coverage
-* Use table-driven tests where appropriate
-
-## Project Structure
-
-```
-wallet-tracker/
-├── cmd/              # Command line applications
-├── cli/              # CLI implementation
-├── domain/           # Business logic
-├── pkg/              # Shared packages
-└── tests/            # Integration tests
-```
-
-## Getting Started
-
-1. Set up your development environment:
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/haghfizzuddin/wallet-tracker.git
+   git clone https://github.com/yourusername/wallet-tracker.git
    cd wallet-tracker
+   ```
+
+2. **Install Go dependencies**
+   ```bash
    go mod download
    ```
 
-2. Run tests:
+3. **Set up configuration**
+   ```bash
+   cd enhanced-analyzer
+   cp enhanced-analyzer-config.json.example enhanced-analyzer-config.json
+   # Add your Etherscan API key
+   ```
+
+4. **Run tests**
    ```bash
    go test ./...
    ```
 
-3. Build the project:
-   ```bash
-   go build -o wallet-tracker cmd/wallet-tracker/main.go
+## Code Style
+
+- Use `gofmt` for formatting
+- Follow [Effective Go](https://golang.org/doc/effective_go.html) guidelines
+- Write clear, self-documenting code
+- Add comments for complex logic
+- Keep functions small and focused
+
+## Adding New Features
+
+### Detection Methods
+To add a new detection method:
+
+1. Add your detection function to `advanced_behavioral_analyzer.go`:
+   ```go
+   func (ba *BehavioralAnalyzer) detectNewPattern(txs []Transaction) []BehavioralFlag {
+       // Your detection logic
+   }
    ```
 
-## Questions?
+2. Call it from `analyzeBehavioralPatterns()`:
+   ```go
+   newFlags := ba.detectNewPattern(txs)
+   flags = append(flags, newFlags...)
+   ```
 
-Feel free to open an issue with your question or reach out to the maintainers directly.
+3. Update risk calculation if needed in `calculateFinalRiskScore()`
 
-Thank you for contributing! 🎉
+### Statistical Analysis
+To add new statistical methods:
+
+1. Add calculation to `performStatisticalAnalysis()`
+2. Update `StatisticalScores` struct if needed
+3. Document the mathematical approach
+
+## Testing
+
+- Write unit tests for new functions
+- Test with real blockchain data
+- Include edge cases
+- Document test scenarios
+
+## Documentation
+
+- Update README.md for user-facing changes
+- Add inline comments for complex logic
+- Update API documentation if applicable
+- Include examples
+
+## Pull Request Process
+
+1. Update the README.md with details of changes if needed
+2. Update the version numbers in any examples files to the new version
+3. The PR will be merged once you have the sign-off of at least one maintainer
+
+## Community
+
+- Be respectful and inclusive
+- Help others when you can
+- Ask questions if you're unsure
+- Share your knowledge
+
+## Recognition
+
+Contributors will be recognized in:
+- The README.md contributors section
+- Release notes
+- Project documentation
+
+Thank you for contributing to Wallet Tracker! 🚀
