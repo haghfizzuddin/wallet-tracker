@@ -43,7 +43,7 @@ A sophisticated blockchain security analysis tool that uses behavioral patterns,
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/wallet-tracker.git
+git clone https://github.com/haghfizzuddin/wallet-tracker.git
 cd wallet-tracker
 ```
 
